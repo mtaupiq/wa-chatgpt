@@ -6,7 +6,6 @@ import qrcode from "qrcode-terminal";
 import * as dotenv from "dotenv";
 dotenv.config();
 
-// Create whatsapp client instance
 const whatsapp = new Client({
   puppeteer: {
     executablePath: process.env.CHROME_PATH,
@@ -27,41 +26,29 @@ whatsapp.on("ready", () => {
     process.exit(1);
   });
 });
-// END Create whatsapp client instance
 
 async function main() {
   const email = process.env.EMAIL;
   const password = process.env.PASSWORD;
 
-  const chatgpt = new ChatGPTAPIBrowser({email, password});
+  const chatgpt = new ChatGPTAPIBrowser({ email, password });
 
   await chatgpt.init();
 
-  whatsapp.on("message", (message) => {
-    if (message.from != 'status@broadcast') {
+  whatsapp.on("message", (msg) => {
+    if (!msg.isStatus) {
       (async () => {
-        console.log(
-          `From: ${message._data.id.remote} (${message._data.notifyName})`
-        );
-  
-        console.log(`Message: ${message.body}`);
-  
+        const chat = await msg.getChat();
+
         // If added to a chatgroup, only respond if tagged
-        const chat = await message.getChat();
-  
         if (
           chat.isGroup &&
-          !message.mentionedIds.includes(whatsapp.info.wid._serialized)
+          !msg.mentionedIds.includes(whatsapp.info.wid._serialized)
         )
           return;
-  
-        const response = await chatgpt.sendMessage(
-          message.body
-        );
-  
-        console.log(`Response: ${response}`);
-  
-        message.reply(response);
+
+        const response = await chatgpt.sendMessage(msg.body);
+        msg.reply(response);
       })();
     }
   });
