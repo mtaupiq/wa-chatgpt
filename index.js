@@ -6,6 +6,9 @@ import qrcode from "qrcode-terminal";
 import * as dotenv from "dotenv";
 dotenv.config();
 
+// Initialize conversation storage
+const conversations = {};
+
 const whatsapp = new Client({
   puppeteer: {
     executablePath: process.env.CHROME_PATH,
@@ -31,13 +34,19 @@ async function main() {
   const email = process.env.EMAIL;
   const password = process.env.PASSWORD;
 
-  const chatgpt = new ChatGPTAPIBrowser({ email, password });
+  const chatgpt = new ChatGPTAPIBrowser({
+    email,
+    password,
+    debug: false,
+    minimize: true,
+  });
 
-  await chatgpt.init();
+  await chatgpt.initSession();
 
   whatsapp.on("message", (msg) => {
     if (!msg.isStatus) {
       (async () => {
+        console.log('=== MESSAGE RECEIVED ===');
         const chat = await msg.getChat();
 
         // If added to a chatgroup, only respond if tagged
@@ -47,8 +56,47 @@ async function main() {
         )
           return;
 
-        const response = await chatgpt.sendMessage(msg.body);
-        msg.reply(response);
+        console.log(`From: ${msg.from} (${msg._data.notifyName})`);
+        console.log(`Message: ${msg.body}`);
+
+        if (msg.body.startsWith("!join ")) {
+          // Join group with invite code
+          const inviteCode = msg.body.split(" ")[1];
+          try {
+            await client.acceptInvite(inviteCode);
+            msg.reply("Joined the group!");
+          } catch (e) {
+            msg.reply("That invite code seems to be invalid.");
+          }
+          return;
+        } else if (msg.body === "!reset") {
+          // Reset conversations with AI
+          delete conversations[msg.from];
+          msg.reply("Conversations reset!")
+          return;
+        }
+
+        // Do we already have a conversation for this sender?
+        if (conversations[msg.from] === undefined) {
+          conversations[msg.from] = await chatgpt.sendMessage(msg.body);
+        } else {
+          const conversationId = conversations[msg.from].conversationId;
+          const messageId = conversations[msg.from].messageId;
+          conversations[msg.from] = await chatgpt.sendMessage(msg.body, {
+            conversationId: conversationId,
+            parentMessageId: messageId,
+          });
+        }
+
+        const response = conversations[msg.from].response;
+
+        console.log(`Response: ${response}`);
+
+        if (chat.isGroup) {
+          msg.reply(response);
+        } else {
+          whatsapp.sendMessage(msg.from, response);
+        }
       })();
     }
   });
