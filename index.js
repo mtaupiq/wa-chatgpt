@@ -37,6 +37,7 @@ async function main() {
   const chatgpt = new ChatGPTAPIBrowser({
     email,
     password,
+    isGoogleLogin: true,
     debug: false,
     minimize: true,
   });
