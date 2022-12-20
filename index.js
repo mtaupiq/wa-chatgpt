@@ -67,7 +67,7 @@ async function main() {
           // Join group with invite code
           const inviteCode = msg.body.split(" ")[1];
           try {
-            await client.acceptInvite(inviteCode);
+            await whatsapp.acceptInvite(inviteCode);
             msg.reply("Joined the group!");
           } catch (e) {
             msg.reply("That invite code seems to be invalid.");
