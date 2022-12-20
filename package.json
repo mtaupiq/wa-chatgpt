@@ -29,6 +29,7 @@
   "dependencies": {
     "chatgpt": "latest",
     "dotenv": "^16.0.3",
+    "openai": "^3.1.0",
     "puppeteer": "^19.4.0",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.0.3"

@@ -1,10 +1,15 @@
 import { ChatGPTAPIBrowser } from "chatgpt";
 import whatsappweb from "whatsapp-web.js";
-
-const { Client, LocalAuth } = whatsappweb;
+import { Configuration, OpenAIApi } from "openai";
+const { Client, LocalAuth, MessageMedia } = whatsappweb;
 import qrcode from "qrcode-terminal";
 import * as dotenv from "dotenv";
 dotenv.config();
+
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
 
 // Initialize conversation storage
 const conversations = {};
@@ -49,21 +54,42 @@ async function main() {
     if (!msg.isStatus) {
       (async () => {
         const chat = await msg.getChat();
-        
+
         // If added to a chatgroup, only respond if tagged
         if (
           chat.isGroup &&
           !msg.mentionedIds.includes(whatsapp.info.wid._serialized)
-          )
+        )
           return;
-          
+
         console.log('=== MESSAGE RECEIVED ===');
         console.log(`From: ${msg.from} (${msg._data.notifyName})`);
         console.log(`Message: ${msg.body}`);
 
         await chat.sendStateTyping();
 
-        if (msg.body.startsWith("!join ")) {
+        if (msg.body.startsWith("!generate ")) {
+          // Generate image with Dall-E
+          const caption = msg.body.slice(10);
+          try {
+            const response = await openai.createImage({
+              prompt: caption,
+              size: "256x256",
+            });
+            const url = response.data.data[0].url;
+            const media = await MessageMedia.fromUrl(url);
+            chat.sendMessage(media, {caption: caption});
+          } catch (error) {
+            msg.reply("Ups sorry generate image error!");
+            if (error.response) {
+              console.log(error.response.status);
+              console.log(error.response.data);
+            } else {
+              console.log(error.message);
+            }
+          }
+          return;
+        } else if (msg.body.startsWith("!join ")) {
           // Join group with invite code
           const inviteCode = msg.body.split(" ")[1];
           try {
@@ -74,7 +100,7 @@ async function main() {
           }
           return;
         } else if (msg.body === "!reset") {
-          // Reset conversations with AI
+          // Reset conversations with ChatGPT
           delete conversations[msg.from];
           msg.reply("Conversations reset!")
           return;
@@ -93,7 +119,7 @@ async function main() {
         }
 
         await chat.clearState();
-        
+
         const response = conversations[msg.from].response;
 
         console.log(`Response: ${response}`);
@@ -101,7 +127,7 @@ async function main() {
         if (chat.isGroup) {
           msg.reply(response);
         } else {
-          whatsapp.sendMessage(msg.from, response);
+          chat.sendMessage(response);
         }
       })();
     }
