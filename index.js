@@ -37,7 +37,8 @@ async function main() {
   const chatgpt = new ChatGPTAPIBrowser({
     email,
     password,
-    isGoogleLogin: true,
+    isGoogleLogin: false,
+    isMicrosoftLogin: true,
     debug: false,
     minimize: true,
   });
@@ -47,18 +48,20 @@ async function main() {
   whatsapp.on("message", (msg) => {
     if (!msg.isStatus) {
       (async () => {
-        console.log('=== MESSAGE RECEIVED ===');
         const chat = await msg.getChat();
-
+        
         // If added to a chatgroup, only respond if tagged
         if (
           chat.isGroup &&
           !msg.mentionedIds.includes(whatsapp.info.wid._serialized)
-        )
+          )
           return;
-
+          
+        console.log('=== MESSAGE RECEIVED ===');
         console.log(`From: ${msg.from} (${msg._data.notifyName})`);
         console.log(`Message: ${msg.body}`);
+
+        await chat.sendStateTyping();
 
         if (msg.body.startsWith("!join ")) {
           // Join group with invite code
@@ -89,6 +92,8 @@ async function main() {
           });
         }
 
+        await chat.clearState();
+        
         const response = conversations[msg.from].response;
 
         console.log(`Response: ${response}`);
