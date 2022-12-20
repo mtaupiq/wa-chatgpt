@@ -79,8 +79,11 @@ async function main() {
             const url = response.data.data[0].url;
             const media = await MessageMedia.fromUrl(url);
             chat.sendMessage(media, {caption: caption});
+            console.log(`Response: ${caption} send`);
           } catch (error) {
-            msg.reply("Ups sorry generate image error!");
+            const errorMsg = "Ups sorry generate image error!";
+            msg.reply(errorMsg);
+            console.log(`Response: ${errorMsg}`);
             if (error.response) {
               console.log(error.response.status);
               console.log(error.response.data);
@@ -94,15 +97,21 @@ async function main() {
           const inviteCode = msg.body.split(" ")[1];
           try {
             await whatsapp.acceptInvite(inviteCode);
-            msg.reply("Joined the group!");
+            const okMsg = "Joined the group!";
+            msg.reply(okMsg);
+            console.log(`Response: ${okMsg}`);
           } catch (e) {
-            msg.reply("That invite code seems to be invalid.");
+            const errorMsg = "That invite code seems to be invalid.";
+            msg.reply(errorMsg);
+            console.log(`Response: ${errorMsg}`);
           }
           return;
         } else if (msg.body === "!reset") {
           // Reset conversations with ChatGPT
           delete conversations[msg.from];
-          msg.reply("Conversations reset!")
+          const okMsg = "Conversations reset!";
+          msg.reply(okMsg)
+          console.log(`Response: ${okMsg}`);
           return;
         }
 
