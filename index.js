@@ -68,9 +68,9 @@ async function main() {
 
         await chat.sendStateTyping();
 
-        if (msg.body.startsWith("!generate ")) {
+        if (msg.body.startsWith("!generate ") || msg.body.split(' ')[1] === "!generate") {
           // Generate image with Dall-E
-          const caption = msg.body.slice(10);
+          const caption = msg.body.startsWith("!join ") ? msg.body.split(" ")[1] : msg.body.slice(25);
           try {
             const response = await openai.createImage({
               prompt: caption,
@@ -92,9 +92,9 @@ async function main() {
             }
           }
           return;
-        } else if (msg.body.startsWith("!join ")) {
+        } else if (msg.body.startsWith("!join ") || msg.body.split(' ')[1] === "!join") {
           // Join group with invite code
-          const inviteCode = msg.body.split(" ")[1];
+          const inviteCode = msg.body.startsWith("!join ") ? msg.body.split(" ")[1] : msg.body.slice(21);
           try {
             await whatsapp.acceptInvite(inviteCode);
             const okMsg = "Joined the group!";
@@ -106,7 +106,7 @@ async function main() {
             console.log(`Response: ${errorMsg}`);
           }
           return;
-        } else if (msg.body === "!reset") {
+        } else if (msg.body === "!reset" || msg.body.split(' ')[1] === "!reset") {
           // Reset conversations with ChatGPT
           delete conversations[msg.from];
           const okMsg = "Conversations reset!";
