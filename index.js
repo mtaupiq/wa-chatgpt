@@ -1,15 +1,9 @@
 import { ChatGPTAPIBrowser } from "chatgpt";
 import whatsappweb from "whatsapp-web.js";
-import { Configuration, OpenAIApi } from "openai";
 const { Client, LocalAuth, MessageMedia } = whatsappweb;
 import qrcode from "qrcode-terminal";
 import * as dotenv from "dotenv";
 dotenv.config();
-
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
 
 // Initialize conversation storage
 const conversations = {};
@@ -68,31 +62,7 @@ async function main() {
 
         await chat.sendStateTyping();
 
-        if (msg.body.startsWith("!generate ") || msg.body.split(' ')[1] === "!generate") {
-          // Generate image with Dall-E
-          const caption = msg.body.startsWith("!join ") ? msg.body.split(" ")[1] : msg.body.slice(25);
-          try {
-            const response = await openai.createImage({
-              prompt: caption,
-              size: "256x256",
-            });
-            const url = response.data.data[0].url;
-            const media = await MessageMedia.fromUrl(url);
-            chat.sendMessage(media, {caption: caption});
-            console.log(`Response: ${caption} send`);
-          } catch (error) {
-            const errorMsg = "Ups sorry generate image error!";
-            msg.reply(errorMsg);
-            console.log(`Response: ${errorMsg}`);
-            if (error.response) {
-              console.log(error.response.status);
-              console.log(error.response.data);
-            } else {
-              console.log(error.message);
-            }
-          }
-          return;
-        } else if (msg.body.startsWith("!join ") || msg.body.split(' ')[1] === "!join") {
+        if (msg.body.startsWith("!join ") || msg.body.split(' ')[1] === "!join") {
           // Join group with invite code
           const inviteCode = msg.body.startsWith("!join ") ? msg.body.split(" ")[1] : msg.body.slice(21);
           try {
